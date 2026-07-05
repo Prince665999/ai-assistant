@@ -1,0 +1,11 @@
+__pycache__/ 
+*.pyc 
+node_modules/ 
+.env 
+dist/ 
+.expo/ 
+backend/data/*.db 
+backend/uploads/ 
+backend/chroma_db/ 
+web-build/ 
+.DS_Store 
