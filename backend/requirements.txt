@@ -21,3 +21,4 @@ sentence-transformers==2.2.2
 torch==2.0.1  
 huggingface-hub==0.20.3  
 asteval==0.9.30  
+feedparser==6.0.10  
