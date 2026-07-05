@@ -1,12 +1,17 @@
 """
 Weather tool using WeatherAPI.com.
 """
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+
 
 import requests
 from typing import Dict, Any
 
 # Weather API configuration
-WEATHER_API_KEY = "7c1831c5f0294d239b762355262503"
+WEATHER_API_KEY = os.getenv("WEATHER_API_KEY")
 WEATHER_URL = "http://api.weatherapi.com/v1/current.json"
 
 def get_weather(city: str) -> str:
