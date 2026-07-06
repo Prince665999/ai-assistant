@@ -20,6 +20,7 @@ from app.auth.routes import router as auth_router
 from app.documents.routes import router as documents_router
 from app.chat.routes import router as chat_router
 from app.analytics.routes import router as analytics_router  # ADD THIS
+from app.admin.routes import router as admin_setup_router
 
 # Import models so Base knows about them before create_all runs
 from app.database import models  # noqa: F401
@@ -60,6 +61,7 @@ app.include_router(auth_router)          # /auth - Authentication endpoints
 app.include_router(documents_router)     # /documents - Document upload and RAG
 app.include_router(chat_router)          # /chat - Chat with memory and tools
 app.include_router(analytics_router)     # /analytics - Admin and business analytics
+app.include_router(admin_setup_router)
 
 
 @app.get("/health")
