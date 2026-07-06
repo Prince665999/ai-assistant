@@ -1,35 +1,53 @@
 import React, { useState } from 'react';
-import { View, TextInput, TouchableOpacity, Text, StyleSheet, Platform } from 'react-native';
+import { View, TextInput, TouchableOpacity, Text, StyleSheet, ActivityIndicator } from 'react-native';
+import { useVoice } from '../../hooks/useVoice';
+import { COLORS } from '../../constants/colors';
+import { SPACING, RADIUS, FONT_SIZE } from '../../constants/theme';
 
-export default function ChatInput({ value, onChangeText, onSend, onVoicePress, isRecording, disabled }) {
-  const canSend = value.trim().length > 0 && !disabled;
+export default function ChatInput({ onSend, isLoading }) {
+  const [text, setText] = useState('');
+  const { isListening, transcript, startListening, stopListening, isSupported } = useVoice();
+
+  // When a voice transcript arrives, drop it straight into the input box
+  // so the user can review/edit before sending.
+  React.useEffect(() => {
+    if (transcript) setText((prev) => (prev ? `${prev} ${transcript}` : transcript));
+  }, [transcript]);
+
+  const handleSend = () => {
+    if (!text.trim() || isLoading) return;
+    onSend(text);
+    setText('');
+  };
+
+  const handleMicPress = () => {
+    if (isListening) stopListening();
+    else startListening();
+  };
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity
-        style={[styles.iconButton, isRecording && styles.iconButtonActive]}
-        onPress={onVoicePress}
-        hitSlop={8}
-      >
-        <Text style={styles.icon}>{isRecording ? '⏹️' : '🎙️'}</Text>
-      </TouchableOpacity>
+      {isSupported && (
+        <TouchableOpacity
+          style={[styles.micButton, isListening && styles.micButtonActive]}
+          onPress={handleMicPress}
+        >
+          <Text style={styles.micIcon}>{isListening ? '⏹' : '🎤'}</Text>
+        </TouchableOpacity>
+      )}
 
       <TextInput
         style={styles.input}
-        value={value}
-        onChangeText={onChangeText}
-        placeholder="Ask anything..."
-        placeholderTextColor="#6b7280"
+        value={text}
+        onChangeText={setText}
+        placeholder="Ask me anything…"
+        placeholderTextColor={COLORS.textMuted}
         multiline
-        editable={!disabled}
+        onSubmitEditing={handleSend}
       />
 
-      <TouchableOpacity
-        style={[styles.sendButton, !canSend && styles.sendButtonDisabled]}
-        onPress={onSend}
-        disabled={!canSend}
-      >
-        <Text style={styles.sendText}>➤</Text>
+      <TouchableOpacity style={styles.sendButton} onPress={handleSend} disabled={isLoading || !text.trim()}>
+        {isLoading ? <ActivityIndicator color={COLORS.onPrimary} size="small" /> : <Text style={styles.sendIcon}>➤</Text>}
       </TouchableOpacity>
     </View>
   );
@@ -39,41 +57,33 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    padding: 8,
+    padding: SPACING.sm,
+    backgroundColor: COLORS.surface,
     borderTopWidth: 1,
-    borderTopColor: '#e2e4ec',
-    backgroundColor: '#f5f6fa',
+    borderTopColor: COLORS.border,
+    gap: SPACING.xs,
   },
   input: {
     flex: 1,
-    maxHeight: 100,
-    fontSize: 16,
-    color: '#1f2333',
-    paddingHorizontal: 8,
-    paddingVertical: Platform.OS === 'ios' ? 8 : 4,
-    backgroundColor: '#ffffff',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#e2e4ec',
-    marginHorizontal: 4,
+    maxHeight: 120,
+    backgroundColor: COLORS.background,
+    borderRadius: RADIUS.md,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    fontSize: FONT_SIZE.md,
+    color: COLORS.text,
   },
-  iconButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
+  micButton: {
+    width: 42, height: 42, borderRadius: 21,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: COLORS.background,
   },
-  iconButtonActive: { backgroundColor: '#ef444422' },
-  icon: { fontSize: 20 },
+  micButtonActive: { backgroundColor: COLORS.danger },
+  micIcon: { fontSize: FONT_SIZE.md },
   sendButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#667eea',
-    alignItems: 'center',
-    justifyContent: 'center',
+    width: 42, height: 42, borderRadius: 21,
+    alignItems: 'center', justifyContent: 'center',
+    backgroundColor: COLORS.primary,
   },
-  sendButtonDisabled: { backgroundColor: '#e2e4ec' },
-  sendText: { color: '#ffffff', fontSize: 16, fontWeight: '700' },
+  sendIcon: { color: COLORS.onPrimary, fontSize: FONT_SIZE.md, fontWeight: '700' },
 });

@@ -1,0 +1,166 @@
+app\analytics\mock_service.py:from sqlalchemy.orm import Session
+app\analytics\mock_service.py:from sqlalchemy import func, and_
+app\analytics\mock_service.py:from datetime import datetime, timedelta
+app\analytics\mock_service.py:from typing import Dict, List, Any
+app\analytics\mock_service.py:import random
+app\analytics\mock_service.py:from app.analytics.models import MetricSnapshot, RegionSales, ToolUsageMock
+app\analytics\models.py:from sqlalchemy import Column, Integer, String, Float, DateTime, Index
+app\analytics\models.py:from sqlalchemy.sql import func
+app\analytics\models.py:from datetime import datetime
+app\analytics\models.py:from app.database.session import AnalyticsBase
+app\analytics\routes.py:from fastapi import APIRouter, Depends, HTTPException, Query
+app\analytics\routes.py:from sqlalchemy.orm import Session
+app\analytics\routes.py:from typing import Optional
+app\analytics\routes.py:from app.database.session import get_app_db, get_analytics_db
+app\analytics\routes.py:from app.auth.dependencies import require_admin
+app\analytics\routes.py:from app.database.models import User
+app\analytics\routes.py:from app.analytics.service import AppAnalyticsService
+app\analytics\routes.py:from app.analytics.mock_service import MockAnalyticsService
+app\analytics\service.py:from sqlalchemy.orm import Session
+app\analytics\service.py:from sqlalchemy import func, and_, desc
+app\analytics\service.py:from datetime import datetime, timedelta
+app\analytics\service.py:from typing import Dict, List, Any
+app\analytics\service.py:from app.database.models import User, Document, ChatHistory, ChatRole
+app\analytics\__init__.py:from app.analytics.models import MetricSnapshot, RegionSales, ToolUsageMock
+app\analytics\__init__.py:from app.analytics.service import AppAnalyticsService
+app\analytics\__init__.py:from app.analytics.mock_service import MockAnalyticsService
+app\analytics\__init__.py:from app.analytics.routes import routerapp\auth\dependencies.py:from jose import jwt
+app\auth\dependencies.py:from fastapi import Depends, HTTPException, status
+app\auth\dependencies.py:from fastapi.security import OAuth2PasswordBearer
+app\auth\dependencies.py:from sqlalchemy.orm import Session
+app\auth\dependencies.py:from app.database.session import get_db
+app\auth\dependencies.py:from app.database.models import User
+app\auth\dependencies.py:from app.auth.security import decode_token
+app\auth\routes.py:from jose import jwt
+app\auth\routes.py:from fastapi import APIRouter, Depends, HTTPException, Request, status
+app\auth\routes.py:from sqlalchemy.orm import Session
+app\auth\routes.py:from app.database.session import get_db
+app\auth\routes.py:from app.database.models import User, UserRole
+app\auth\routes.py:from app.auth.security import (
+app\auth\routes.py:from app.auth.dependencies import get_current_user
+app\auth\routes.py:from app.auth.schemas import (
+app\auth\routes.py:from app.utils.rate_limit import limiter
+app\auth\routes.py:from app.config import settings
+app\auth\schemas.py:from pydantic import BaseModel, EmailStr
+app\auth\security.py:from datetime import datetime, timedelta, timezone
+app\auth\security.py:import bcrypt
+app\auth\security.py:from jose import jwt
+app\auth\security.py:from app.config import settings
+app\auth\__init__.py:from app.auth.routes import router
+app\auth\__init__.py:from app.auth.dependencies import get_current_user, require_admin
+app\auth\__init__.py:from app.auth.security import (
+app\chat\memory_service.py:from sqlalchemy.orm import Session
+app\chat\memory_service.py:from app.database.models import ChatHistory, ChatRole
+app\chat\routes.py:from fastapi import APIRouter, Depends, HTTPException
+app\chat\routes.py:from sqlalchemy.orm import Session
+app\chat\routes.py:from pydantic import BaseModel
+app\chat\routes.py:from typing import Optional, List
+app\chat\routes.py:from app.database.session import get_db
+app\chat\routes.py:from app.auth.dependencies import get_current_user
+app\chat\routes.py:from app.database.models import User, ChatHistory, ChatRole
+app\chat\routes.py:from app.chat.service import call_llm_with_memory
+app\chat\routes.py:from app.chat.memory_service import get_recent_history, clear_user_history
+app\chat\service.py:import time
+app\chat\service.py:import json
+app\chat\service.py:from typing import List, Dict, Any
+app\chat\service.py:from sqlalchemy.orm import Session
+app\chat\service.py:from app.llm.client import get_llm_client
+app\chat\service.py:from app.chat.memory_service import get_recent_history, save_conversation_turn
+app\chat\service.py:from app.tools.calculator import calculator_tool
+app\chat\service.py:from app.tools.weather import weather_tool
+app\chat\service.py:from app.tools.news import news_tool
+app\chat\service.py:from app.tools.rag import rag_tool
+app\chat\service.py:from app.tools.router import execute_tool
+app\chat\service.py:from app.email_service.service import send_chat_email, start_email_worker
+app\config.py:import os
+app\config.py:from pathlib import Path
+app\config.py:from dotenv import load_dotenv
+app\config.py:from typing import List
+app\database\models.py:from sqlalchemy import (
+app\database\models.py:from sqlalchemy.sql import func
+app\database\models.py:from sqlalchemy.orm import relationship
+app\database\models.py:import enum
+app\database\models.py:from app.database.session import AppBase
+app\database\session.py:from sqlalchemy import create_engine
+app\database\session.py:from sqlalchemy.ext.declarative import declarative_base
+app\database\session.py:from sqlalchemy.orm import sessionmaker, Session
+app\database\session.py:from typing import Generator
+app\database\session.py:from app.config import settings
+app\documents\routes.py:import shutil
+app\documents\routes.py:from typing import List
+app\documents\routes.py:from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status
+app\documents\routes.py:from sqlalchemy.orm import Session
+app\documents\routes.py:from pydantic import BaseModel
+app\documents\routes.py:from datetime import datetime
+app\documents\routes.py:from app.database.session import get_db
+app\documents\routes.py:from app.database.models import Document, DocumentStatus, User
+app\documents\routes.py:from app.auth.dependencies import get_current_user, require_admin
+app\documents\routes.py:from app.documents.service import DocumentProcessor
+app\documents\routes.py:from app.rag.service import get_rag_service
+app\documents\service.py:import os
+app\documents\service.py:import shutil
+app\documents\service.py:from pathlib import Path
+app\documents\service.py:from typing import Optional
+app\documents\service.py:import PyPDF2
+app\documents\service.py:import docx
+app\documents\service.py:from datetime import datetime
+app\documents\service.py:from app.database.session import AppSessionLocal
+app\documents\service.py:from app.database.models import Document, DocumentStatus
+app\documents\service.py:from app.rag.service import get_rag_service
+app\email_service\service.py:import smtplib
+app\email_service\service.py:from email.mime.text import MIMEText
+app\email_service\service.py:from email.mime.multipart import MIMEMultipart
+app\email_service\service.py:from email.header import Header
+app\email_service\service.py:import threading
+app\email_service\service.py:import queue
+app\email_service\service.py:import time
+app\email_service\service.py:from typing import Optional
+app\email_service\service.py:from datetime import datetime
+app\email_service\service.py:from app.config import settings  # Make sure this is imported
+app\llm\client.py:import os
+app\llm\client.py:from typing import List, Dict, Any
+app\llm\client.py:from groq import Groq
+app\llm\client.py:from app.config import settings
+app\main.py:import sys
+app\main.py:from pathlib import Path
+app\main.py:from fastapi import FastAPI
+app\main.py:from fastapi.middleware.cors import CORSMiddleware
+app\main.py:from slowapi.errors import RateLimitExceeded
+app\main.py:from slowapi import _rate_limit_exceeded_handler
+app\main.py:from app.config import settings
+app\main.py:from app.database.session import engine, AppBase
+app\main.py:from app.utils.rate_limit import limiter
+app\main.py:from app.auth.routes import router as auth_router
+app\main.py:from app.documents.routes import router as documents_router
+app\main.py:from app.chat.routes import router as chat_router
+app\main.py:from app.analytics.routes import router as analytics_router  # ADD THIS
+app\main.py:from app.database import models  # noqa: F401
+app\main.py:from app.analytics import models as analytics_models  # ADD THIS
+app\rag\service.py:import os
+app\rag\service.py:import json
+app\rag\service.py:import uuid
+app\rag\service.py:from pathlib import Path
+app\rag\service.py:from typing import List, Dict, Any, Optional
+app\rag\service.py:import hashlib
+app\rag\service.py:import chromadb
+app\rag\service.py:from chromadb.config import Settings
+app\rag\service.py:from sentence_transformers import SentenceTransformer
+app\rag\service.py:import nltk
+app\rag\service.py:from nltk.tokenize import sent_tokenize
+app\tools\calculator.py:import math
+app\tools\calculator.py:from asteval import Interpreter
+app\tools\news.py:import feedparser
+app\tools\news.py:from bs4 import BeautifulSoup
+app\tools\news.py:import requests
+app\tools\news.py:from typing import List, Dict
+app\tools\rag.py:from app.rag.service import get_rag_service
+app\tools\router.py:from app.tools.calculator import calculate
+app\tools\router.py:from app.tools.weather import get_weather
+app\tools\router.py:from app.tools.news import get_news
+app\tools\router.py:from app.tools.rag import search_documents
+app\tools\weather.py:from dotenv import load_dotenv
+app\tools\weather.py:import os
+app\tools\weather.py:import requests
+app\tools\weather.py:from typing import Dict, Any
+app\utils\rate_limit.py:from slowapi import Limiter
+app\utils\rate_limit.py:from slowapi.util import get_remote_address

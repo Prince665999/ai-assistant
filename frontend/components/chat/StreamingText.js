@@ -1,26 +1,21 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { Text } from 'react-native';
+import React, { useEffect } from 'react';
+import { Text, StyleSheet } from 'react-native';
+import { useStreaming } from '../../hooks/useStreaming';
+import { COLORS } from '../../constants/colors';
+import { FONT_SIZE } from '../../constants/theme';
 
-export default function StreamingText({ text, speedMs = 15, onDone, style }) {
-  const [shown, setShown] = useState('');
-  const indexRef = useRef(0);
+// Plays a typewriter animation over `text` once, then stays fully shown.
+export default function StreamingText({ text, style }) {
+  const { displayedText, start } = useStreaming();
 
   useEffect(() => {
-    setShown('');
-    indexRef.current = 0;
-
-    const interval = setInterval(() => {
-      indexRef.current += 1;
-      setShown(text.slice(0, indexRef.current));
-
-      if (indexRef.current >= text.length) {
-        clearInterval(interval);
-        onDone && onDone();
-      }
-    }, speedMs);
-
-    return () => clearInterval(interval);
+    start(text);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [text]);
 
-  return <Text style={style}>{shown}</Text>;
+  return <Text style={[styles.text, style]}>{displayedText}</Text>;
 }
+
+const styles = StyleSheet.create({
+  text: { fontSize: FONT_SIZE.md, color: COLORS.text, lineHeight: 22 },
+});

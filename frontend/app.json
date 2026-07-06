@@ -1,47 +1,33 @@
 {
   "expo": {
-    "name": "AI Assistant",
-    "slug": "ai-assistant",
+    "name": "FINAL_FRONTEND",
+    "slug": "FINAL_FRONTEND",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
+    "newArchEnabled": true,
     "splash": {
-      "image": "./assets/splash.png",
+      "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "assetBundlePatterns": [
-      "assets/**/*",
-      "public/**/*"
-    ],
     "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.aiassistant.app"
+      "supportsTablet": true
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.aiassistant.app"
+      "edgeToEdgeEnabled": true
     },
     "web": {
-      "favicon": "./assets/favicon.png",
-      "name": "AI Assistant",
-      "shortName": "AI Assist",
-      "description": "AI-powered customer support assistant",
-      "themeColor": "#667eea",
-      "backgroundColor": "#ffffff",
-      "display": "standalone",
-      "orientation": "portrait",
-      "startUrl": "/",
-      "lang": "en",
-      "scope": "/",
-      "manifestUrl": "/manifest.json"
+      "favicon": "./assets/favicon.png"
     },
-    "extra": {
-      "API_URL": "http://192.168.100.149:8000"
-    }
+    "plugins": [
+      "expo-secure-store",
+      "expo-web-browser"
+    ]
   }
 }

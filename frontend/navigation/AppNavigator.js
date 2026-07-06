@@ -1,23 +1,22 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
-
 import { useAuth } from '../hooks/useAuth';
-import LoadingSpinner from '../components/common/LoadingSpinner';
 import AuthStack from './AuthStack';
 import UserTabs from './UserTabs';
 import AdminStack from './AdminStack';
+import LoadingSpinner from '../components/common/LoadingSpinner';
 import { ROLES } from '../utils/constants';
 
-// This is the one place that decides which whole app the person sees:
-//   - not logged in            -> AuthStack (Login/Register)
-//   - logged in, role='admin'  -> AdminStack
-//   - logged in, role='user'   -> UserTabs
-// Nothing else in the app needs to know about this logic.
+// The single place that decides which "world" the app shows.
+//
+// IMPORTANT: isLoading is guaranteed (by AuthContext) to always resolve to
+// false eventually, even on web, even if session restore fails - so this
+// loading screen can never get stuck forever the way the old app's did.
 export default function AppNavigator() {
   const { isAuthenticated, isLoading, user } = useAuth();
 
   if (isLoading) {
-    return <LoadingSpinner label="Checking your session..." />;
+    return <LoadingSpinner label="Checking your session…" />;
   }
 
   return (

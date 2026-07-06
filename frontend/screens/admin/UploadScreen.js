@@ -1,21 +1,13 @@
-import React, { useState, useCallback } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  StyleSheet,
-  ScrollView,
-  RefreshControl,
-  Alert,
-} from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import * as DocumentPicker from 'expo-document-picker';
-import { useFocusEffect } from '@react-navigation/native';
+import Header from '../../components/common/Header';
 import UploadProgress from '../../components/admin/UploadProgress';
 import DocumentList from '../../components/admin/DocumentList';
-import LoadingSpinner from '../../components/common/LoadingSpinner';
 import ErrorMessage from '../../components/common/ErrorMessage';
-import { uploadDocument, getAllDocuments } from '../../services/document';
-
+import * as documentService from '../../services/document';
+import { COLORS } from '../../constants/colors';
+import { SPACING, RADIUS, FONT_SIZE, SHADOW } from '../../constants/theme';
 
 const ALLOWED_TYPES = [
   'application/pdf',
@@ -25,129 +17,71 @@ const ALLOWED_TYPES = [
 
 export default function UploadScreen() {
   const [documents, setDocuments] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState(0);
+  const [currentFileName, setCurrentFileName] = useState('');
   const [error, setError] = useState(null);
-  const [uploading, setUploading] = useState(null); // { fileName, progress }
 
   const loadDocuments = useCallback(async () => {
     try {
-      setError(null);
-      const data = await getAllDocuments();
-      setDocuments(data);
+      const data = await documentService.listAllDocuments();
+      setDocuments(data || []);
     } catch (err) {
-      setError('Could not load documents. Pull down to retry.');
-    } finally {
-      setLoading(false);
+      console.log('[UploadScreen] failed to load documents:', err?.message);
     }
   }, []);
 
-  useFocusEffect(
-    useCallback(() => {
-      loadDocuments();
-    }, [loadDocuments])
-  );
+  useEffect(() => { loadDocuments(); }, [loadDocuments]);
 
-  const handlePickFile = async () => {
+  const handlePickAndUpload = async () => {
+    setError(null);
     const result = await DocumentPicker.getDocumentAsync({
       type: ALLOWED_TYPES,
       copyToCacheDirectory: true,
     });
 
-    if (result.canceled || !result.assets || result.assets.length === 0) {
-      return;
-    }
+    if (result.canceled) return;
+    const file = result.assets?.[0];
+    if (!file) return;
 
-    const file = result.assets[0];
-
-    if (file.size && file.size > 10 * 1024 * 1024) {
-      Alert.alert('File too large', 'Please choose a file under 10MB.');
-      return;
-    }
+    setUploading(true);
+    setProgress(0);
+    setCurrentFileName(file.name);
 
     try {
-      setUploading({ fileName: file.name, progress: 0 });
-      await uploadDocument(file.uri, file.name, file.mimeType, (percent) => {
-        setUploading((prev) => (prev ? { ...prev, progress: percent } : prev));
-      });
-      setUploading(null);
+      await documentService.uploadDocument(file, setProgress);
       await loadDocuments();
     } catch (err) {
-      setUploading(null);
-      Alert.alert('Upload failed', err?.response?.data?.detail || 'Please try again.');
+      setError(err?.response?.data?.detail || 'Upload failed. Please try a smaller file or a supported type (PDF, DOCX, TXT).');
+    } finally {
+      setUploading(false);
     }
   };
 
-  if (loading) {
-    return <LoadingSpinner />;
-  }
-
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
-      refreshControl={<RefreshControl refreshing={loading} onRefresh={loadDocuments} />}
-    >
-      <Text style={styles.title}>Upload Document</Text>
-      <Text style={styles.subtitle}>PDF, DOCX, or TXT — max 10MB</Text>
+    <ScrollView style={styles.flex} contentContainerStyle={styles.content}>
+      <Header title="Upload Documents" subtitle="PDF, DOCX, or TXT — max 10MB" />
 
-      <TouchableOpacity style={styles.pickButton} onPress={handlePickFile} disabled={!!uploading}>
-        <Text style={styles.pickButtonText}>
-          {uploading ? 'Uploading…' : '+ Choose File'}
-        </Text>
+      <TouchableOpacity style={styles.uploadButton} onPress={handlePickAndUpload} disabled={uploading}>
+        <Text style={styles.uploadButtonText}>{uploading ? 'Uploading…' : '＋  Choose a file to upload'}</Text>
       </TouchableOpacity>
 
-      {uploading && (
-        <UploadProgress fileName={uploading.fileName} progress={uploading.progress} />
-      )}
-
-      <View style={styles.divider} />
+      {uploading && <UploadProgress fileName={currentFileName} progress={progress} />}
+      {!!error && <ErrorMessage message={error} />}
 
       <Text style={styles.sectionTitle}>All Documents</Text>
-      {error ? <ErrorMessage message={error} onRetry={loadDocuments} /> : null}
-      <DocumentList documents={documents} />
+      <DocumentList documents={documents} canDelete={false} />
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#FAFAFA',
+  flex: { flex: 1, backgroundColor: COLORS.background },
+  content: { padding: SPACING.md, paddingTop: 0 },
+  uploadButton: {
+    backgroundColor: COLORS.surface, borderWidth: 2, borderStyle: 'dashed', borderColor: COLORS.primary,
+    borderRadius: RADIUS.md, padding: SPACING.lg, alignItems: 'center', marginBottom: SPACING.md, ...SHADOW,
   },
-  content: {
-    padding: 20,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#222',
-  },
-  subtitle: {
-    fontSize: 13,
-    color: '#888',
-    marginTop: 4,
-    marginBottom: 20,
-  },
-  pickButton: {
-    backgroundColor: "#667eea",
-    borderRadius: 12,
-    paddingVertical: 14,
-    alignItems: 'center',
-  },
-  pickButtonText: {
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: 15,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: '#EEE',
-    marginVertical: 24,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#222',
-    marginBottom: 8,
-  },
+  uploadButtonText: { color: COLORS.primary, fontWeight: '700', fontSize: FONT_SIZE.md },
+  sectionTitle: { fontSize: FONT_SIZE.md, fontWeight: '700', color: COLORS.text, marginVertical: SPACING.md },
 });

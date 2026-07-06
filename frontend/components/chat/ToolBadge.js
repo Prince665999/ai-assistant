@@ -1,22 +1,16 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-
-const TOOL_LABELS = {
-  calculator: '🧮 Calculator',
-  weather: '🌤️ Weather',
-  news: '📰 News',
-  search: '🔎 Search',
-  search_documents: '📄 Documents',
-  no_tool: null,
-};
+import { COLORS } from '../../constants/colors';
+import { SPACING, RADIUS, FONT_SIZE } from '../../constants/theme';
+import { TOOL_LABELS } from '../../utils/constants';
 
 export default function ToolBadge({ tool }) {
   if (!tool || tool === 'no_tool') return null;
-  const label = TOOL_LABELS[tool] ?? `🔧 ${tool}`;
+  const label = TOOL_LABELS[tool] || tool;
 
   return (
     <View style={styles.badge}>
-      <Text style={styles.text}>{label}</Text>
+      <Text style={styles.text}>🔧 {label}</Text>
     </View>
   );
 }
@@ -24,15 +18,13 @@ export default function ToolBadge({ tool }) {
 const styles = StyleSheet.create({
   badge: {
     alignSelf: 'flex-start',
-    backgroundColor: '#764ba222',
-    paddingHorizontal: 8,
+    backgroundColor: COLORS.background,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: RADIUS.pill,
+    paddingHorizontal: SPACING.sm,
     paddingVertical: 2,
-    borderRadius: 999,
-    marginTop: 4,
+    marginTop: SPACING.xs,
   },
-  text: {
-    fontSize: 12,
-    color: '#764ba2',
-    fontWeight: '600',
-  },
+  text: { fontSize: FONT_SIZE.xs, color: COLORS.textSecondary, fontWeight: '600' },
 });

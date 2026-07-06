@@ -1,30 +1,21 @@
-// components/common/DateRangeFilter.js
-// Simple segmented control for 7d / 30d / 90d. Purely presentational —
-// the screen using it owns the selected value and re-fetches on change.
-
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { COLORS } from '../../constants/colors';
+import { SPACING, RADIUS, FONT_SIZE } from '../../constants/theme';
+import { DATE_RANGES } from '../../utils/constants';
 
-const OPTIONS = [
-  { label: '7D', value: 7 },
-  { label: '30D', value: 30 },
-  { label: '90D', value: 90 },
-];
-
-const PRIMARY = '#667eea';
-
-export default function DateRangeFilter({ value, onChange }) {
+export default function DateRangeFilter({ selectedDays, onChange }) {
   return (
     <View style={styles.row}>
-      {OPTIONS.map((opt) => {
-        const active = opt.value === value;
+      {DATE_RANGES.map((range) => {
+        const active = range.days === selectedDays;
         return (
           <TouchableOpacity
-            key={opt.value}
-            onPress={() => onChange(opt.value)}
+            key={range.days}
+            onPress={() => onChange(range.days)}
             style={[styles.pill, active && styles.pillActive]}
           >
-            <Text style={[styles.pillText, active && styles.pillTextActive]}>{opt.label}</Text>
+            <Text style={[styles.pillText, active && styles.pillTextActive]}>{range.label}</Text>
           </TouchableOpacity>
         );
       })}
@@ -33,27 +24,16 @@ export default function DateRangeFilter({ value, onChange }) {
 }
 
 const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    backgroundColor: '#f0f1f7',
-    borderRadius: 10,
-    padding: 4,
-    alignSelf: 'flex-start',
-  },
+  row: { flexDirection: 'row', gap: SPACING.sm },
   pill: {
-    paddingVertical: 6,
-    paddingHorizontal: 14,
-    borderRadius: 8,
+    paddingVertical: SPACING.xs,
+    paddingHorizontal: SPACING.md,
+    borderRadius: RADIUS.pill,
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
-  pillActive: {
-    backgroundColor: PRIMARY,
-  },
-  pillText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#7a7a90',
-  },
-  pillTextActive: {
-    color: '#ffffff',
-  },
+  pillActive: { backgroundColor: COLORS.primary, borderColor: COLORS.primary },
+  pillText: { color: COLORS.textSecondary, fontSize: FONT_SIZE.sm, fontWeight: '600' },
+  pillTextActive: { color: COLORS.onPrimary },
 });

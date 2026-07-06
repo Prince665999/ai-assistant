@@ -1,109 +1,114 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
-import { useAuth } from '../../hooks/useAuth';
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, Platform, ActivityIndicator } from 'react-native';
 import Header from '../../components/common/Header';
+import { useAuth } from '../../hooks/useAuth';
+import * as chatService from '../../services/chat';
+import { COLORS } from '../../constants/colors';
+import { SPACING, RADIUS, FONT_SIZE, SHADOW } from '../../constants/theme';
+
+function confirmAction(title, message, onConfirm) {
+  if (Platform.OS === 'web') {
+    // eslint-disable-next-line no-alert
+    if (window.confirm(`${title}\n\n${message}`)) onConfirm();
+    return;
+  }
+  Alert.alert(title, message, [
+    { text: 'Cancel', style: 'cancel' },
+    { text: 'Confirm', style: 'destructive', onPress: onConfirm },
+  ]);
+}
 
 export default function ProfileScreen() {
   const { user, logout } = useAuth();
+  const [busy, setBusy] = useState(false);
 
-  function confirmLogout() {
-    Alert.alert('Log out', 'Are you sure you want to log out?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Log out', style: 'destructive', onPress: logout },
-    ]);
-  }
+  const handleClearHistory = () => {
+    confirmAction('Clear chat history', 'This cannot be undone. Continue?', async () => {
+      setBusy(true);
+      try {
+        await chatService.clearHistory();
+      } catch (error) {
+        console.log('[ProfileScreen] clear history failed:', error?.message);
+      } finally {
+        setBusy(false);
+      }
+    });
+  };
 
-  function comingSoon(feature) {
-    Alert.alert(feature, 'This will be wired up once chat history is built (Step 16).');
-  }
+  const handleExport = async () => {
+    setBusy(true);
+    try {
+      const data = await chatService.exportHistory();
+      const json = JSON.stringify(data, null, 2);
+      if (Platform.OS === 'web') {
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'chat-history.json';
+        link.click();
+        URL.revokeObjectURL(url);
+      } else {
+        console.log('Exported history:', json);
+      }
+    } catch (error) {
+      console.log('[ProfileScreen] export failed:', error?.message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleLogout = () => {
+    confirmAction('Log out', 'Are you sure you want to log out?', logout);
+  };
 
   return (
-    <View style={styles.container}>
-      <Header title="Profile" />
+    <View style={styles.flex}>
+      <Header title="Profile" subtitle="Your account" />
 
       <View style={styles.card}>
-        <Text style={styles.label}>Email</Text>
-        <Text style={styles.value}>{user?.email}</Text>
-
-        <Text style={styles.label}>Role</Text>
-        <Text style={[styles.value, styles.roleBadge]}>{user?.role}</Text>
+        <Text style={styles.emailLabel}>Signed in as</Text>
+        <Text style={styles.email}>{user?.email}</Text>
+        <View style={styles.roleBadge}>
+          <Text style={styles.roleText}>{user?.role?.toUpperCase()}</Text>
+        </View>
       </View>
 
-      <View style={styles.actions}>
-        <TouchableOpacity
-          style={styles.secondaryButton}
-          onPress={() => comingSoon('Export chat history')}
-        >
-          <Text style={styles.secondaryButtonText}>Export chat history</Text>
-        </TouchableOpacity>
+      {busy && <ActivityIndicator style={{ marginBottom: SPACING.md }} color={COLORS.primary} />}
 
-        <TouchableOpacity
-          style={styles.secondaryButton}
-          onPress={() => comingSoon('Clear chat history')}
-        >
-          <Text style={styles.secondaryButtonText}>Clear chat history</Text>
-        </TouchableOpacity>
+      <TouchableOpacity style={styles.actionButton} onPress={handleExport} disabled={busy}>
+        <Text style={styles.actionText}>Export Chat History</Text>
+      </TouchableOpacity>
 
-        <TouchableOpacity style={styles.logoutButton} onPress={confirmLogout}>
-          <Text style={styles.logoutButtonText}>Log Out</Text>
-        </TouchableOpacity>
-      </View>
+      <TouchableOpacity style={styles.actionButton} onPress={handleClearHistory} disabled={busy}>
+        <Text style={styles.actionText}>Clear Chat History</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={[styles.actionButton, styles.logoutButton]} onPress={handleLogout}>
+        <Text style={styles.logoutText}>Log Out</Text>
+      </TouchableOpacity>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f5f6fa' },
+  flex: { flex: 1, backgroundColor: COLORS.background, padding: SPACING.md },
   card: {
-    backgroundColor: '#ffffff',
-    margin: 24,
-    borderRadius: 10,
-    padding: 24,
-    borderWidth: 1,
-    borderColor: '#e2e4ec',
+    backgroundColor: COLORS.surface, borderRadius: RADIUS.md,
+    padding: SPACING.lg, marginBottom: SPACING.lg, ...SHADOW,
   },
-  label: {
-    fontSize: 12,
-    color: '#6b7280',
-    textTransform: 'uppercase',
-    marginTop: 8,
-  },
-  value: {
-    fontSize: 16,
-    color: '#1f2333',
-    marginTop: 4,
-  },
+  emailLabel: { fontSize: FONT_SIZE.xs, color: COLORS.textSecondary, textTransform: 'uppercase', fontWeight: '600' },
+  email: { fontSize: FONT_SIZE.lg, fontWeight: '700', color: COLORS.text, marginTop: 4, marginBottom: SPACING.sm },
   roleBadge: {
-    color: '#667eea',
-    fontWeight: '600',
-    textTransform: 'capitalize',
+    alignSelf: 'flex-start', backgroundColor: COLORS.background,
+    borderRadius: RADIUS.pill, paddingHorizontal: SPACING.sm, paddingVertical: 2,
   },
-  actions: {
-    paddingHorizontal: 24,
+  roleText: { fontSize: FONT_SIZE.xs, fontWeight: '700', color: COLORS.primary },
+  actionButton: {
+    backgroundColor: COLORS.surface, borderRadius: RADIUS.md,
+    padding: SPACING.md, marginBottom: SPACING.sm, ...SHADOW,
   },
-  secondaryButton: {
-    borderWidth: 1,
-    borderColor: '#e2e4ec',
-    borderRadius: 10,
-    paddingVertical: 16,
-    alignItems: 'center',
-    marginBottom: 8,
-    backgroundColor: '#ffffff',
-  },
-  secondaryButtonText: {
-    color: '#1f2333',
-    fontSize: 14,
-  },
-  logoutButton: {
-    backgroundColor: '#ef4444',
-    borderRadius: 10,
-    paddingVertical: 16,
-    alignItems: 'center',
-    marginTop: 8,
-  },
-  logoutButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
+  actionText: { fontSize: FONT_SIZE.md, color: COLORS.text, fontWeight: '600' },
+  logoutButton: { backgroundColor: COLORS.danger, marginTop: SPACING.md },
+  logoutText: { fontSize: FONT_SIZE.md, color: COLORS.onPrimary, fontWeight: '700', textAlign: 'center' },
 });

@@ -1,68 +1,54 @@
-// components/charts/DonutBreakdown.js
-// Wraps react-native-chart-kit's PieChart for "proportion of a whole" data
-// (tool usage split, etc). chart-kit doesn't have a true donut, so this
-// renders a standard pie with a legend — same idea, learning-project simple.
-
 import React from 'react';
-import { View, Text, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, Dimensions, StyleSheet } from 'react-native';
 import { PieChart } from 'react-native-chart-kit';
+import { chartConfig } from './chartConfig';
+import { COLORS } from '../../constants/colors';
+import { SPACING, RADIUS, FONT_SIZE, SHADOW } from '../../constants/theme';
 
 const screenWidth = Dimensions.get('window').width;
 
-// A small fixed palette so colors stay consistent between chart and legend.
-const PALETTE = ['#667eea', '#764ba2', '#f093fb', '#4facfe', '#43e97b', '#fa709a'];
+const PALETTE = [COLORS.primary, COLORS.secondary, COLORS.success, COLORS.warning, COLORS.info, COLORS.danger];
 
-export default function DonutBreakdown({ title, labels = [], data = [] }) {
-  const hasData = labels.length > 0 && data.length > 0;
+export default function DonutBreakdown({ title, labels, data }) {
+  const hasData = Array.isArray(data) && data.length > 0;
+  const chartWidth = Math.min(screenWidth - SPACING.md * 2, 700);
 
-  const chartData = labels.map((label, i) => ({
+  const pieData = (labels || []).map((label, index) => ({
     name: label,
-    population: data[i] ?? 0,
-    color: PALETTE[i % PALETTE.length],
-    legendFontColor: '#5a5a6e',
+    population: data[index] ?? 0,
+    color: PALETTE[index % PALETTE.length],
+    legendFontColor: COLORS.textSecondary,
     legendFontSize: 12,
   }));
 
   return (
-    <View style={styles.container}>
-      {title ? <Text style={styles.title}>{title}</Text> : null}
+    <View style={styles.card}>
+      <Text style={styles.title}>{title}</Text>
       {hasData ? (
         <PieChart
-          data={chartData}
-          width={screenWidth - 48}
+          data={pieData}
+          width={chartWidth}
           height={200}
-          chartConfig={{
-            color: (opacity = 1) => `rgba(102, 126, 234, ${opacity})`,
-          }}
+          chartConfig={chartConfig}
           accessor="population"
           backgroundColor="transparent"
           paddingLeft="8"
-          hasLegend
         />
       ) : (
-        <Text style={styles.empty}>No usage data yet</Text>
+        <Text style={styles.empty}>No data available yet.</Text>
       )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    backgroundColor: '#ffffff',
-    borderRadius: 14,
-    padding: 12,
-    marginVertical: 6,
+  card: {
+    backgroundColor: COLORS.surface,
+    borderRadius: RADIUS.md,
+    padding: SPACING.md,
+    marginBottom: SPACING.md,
+    ...SHADOW,
   },
-  title: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#1e1e2d',
-    marginBottom: 8,
-    marginLeft: 4,
-  },
-  empty: {
-    textAlign: 'center',
-    color: '#a0a0b2',
-    paddingVertical: 40,
-  },
+  title: { fontSize: FONT_SIZE.md, fontWeight: '700', color: COLORS.text, marginBottom: SPACING.sm },
+  empty: { color: COLORS.textMuted, fontSize: FONT_SIZE.sm, paddingVertical: SPACING.lg, textAlign: 'center' },
 });

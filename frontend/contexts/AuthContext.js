@@ -1,177 +1,101 @@
-// Single source of truth for "who is logged in".
-//
-// AppNavigator reads `isAuthenticated` + `user.role` to decide which stack
-// to show (Auth / User / Admin). Screens read `login`/`register`/`logout`
-// to change that state.
-
-import React, {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  useCallback,
-} from 'react';
-import * as SecureStore from 'expo-secure-store';
-import api, { registerAuthFailureHandler } from '../services/api';
-
-// --- Token storage functions directly in this file ---
-const ACCESS_TOKEN_KEY = 'access_token';
-const REFRESH_TOKEN_KEY = 'refresh_token';
-
-const tokenStorage = {
-  getAccessToken: async () => {
-    try {
-      return await SecureStore.getItemAsync(ACCESS_TOKEN_KEY);
-    } catch (error) {
-      console.log('Error getting access token:', error);
-      return null;
-    }
-  },
-  getRefreshToken: async () => {
-    try {
-      return await SecureStore.getItemAsync(REFRESH_TOKEN_KEY);
-    } catch (error) {
-      console.log('Error getting refresh token:', error);
-      return null;
-    }
-  },
-  saveTokens: async (accessToken, refreshToken) => {
-    try {
-      await SecureStore.setItemAsync(ACCESS_TOKEN_KEY, accessToken);
-      await SecureStore.setItemAsync(REFRESH_TOKEN_KEY, refreshToken);
-    } catch (error) {
-      console.log('Error saving tokens:', error);
-    }
-  },
-  clearTokens: async () => {
-    try {
-      await SecureStore.deleteItemAsync(ACCESS_TOKEN_KEY);
-      await SecureStore.deleteItemAsync(REFRESH_TOKEN_KEY);
-    } catch (error) {
-      console.log('Error clearing tokens:', error);
-    }
-  },
-};
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import * as authService from '../services/auth';
+import { registerAuthFailureHandler } from '../services/api';
+import { tokenStorage } from '../utils/storage';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [authError, setAuthError] = useState(null);
 
-  const clearSession = useCallback(async () => {
-    await tokenStorage.clearTokens();
-    setUser(null);
-  }, []);
-
-  // Try to restore a session on app start if we already have tokens saved.
+  // Restore session on app start.
+  //
+  // IMPORTANT: this effect is guaranteed to end with setIsLoading(false)
+  // no matter what happens inside the try block. A previous version of
+  // this app could get stuck here forever on web (because expo-secure-store
+  // doesn't work there), which produced an invisible, permanently-loading
+  // blank screen. tokenStorage already catches its own errors and returns
+  // null instead of throwing, and the finally block below is a second
+  // safety net.
   useEffect(() => {
-    (async () => {
+    let isMounted = true;
+
+    async function restoreSession() {
       try {
         const accessToken = await tokenStorage.getAccessToken();
-        if (accessToken) {
-          // Set the token in axios headers
-          api.defaults.headers.Authorization = `Bearer ${accessToken}`;
-          const response = await api.get('/auth/me');
-          setUser(response.data);
+        if (!accessToken) {
+          if (isMounted) setUser(null);
+          return;
         }
-      } catch (err) {
-        // Token invalid/expired - just start logged out.
-        console.log('Session restore failed:', err);
-        await clearSession();
+        const me = await authService.fetchMe();
+        if (isMounted) setUser(me);
+      } catch (error) {
+        console.log('[auth] session restore failed:', error?.message);
+        await tokenStorage.clearTokens();
+        if (isMounted) setUser(null);
       } finally {
-        setIsLoading(false);
+        if (isMounted) setIsLoading(false);
       }
-    })();
-  }, [clearSession]);
+    }
 
-  // If a background token refresh ever fails (see services/api.js), log
-  // the user out cleanly instead of leaving them in a broken state.
+    restoreSession();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // If api.js ever gives up on a refresh, it calls this to force a clean logout.
   useEffect(() => {
-    registerAuthFailureHandler(() => {
-      setUser(null);
-    });
+    registerAuthFailureHandler(() => setUser(null));
   }, []);
 
   const login = useCallback(async (email, password) => {
-    setError(null);
-    try {
-      const response = await api.post('/auth/login', { email, password });
-      
-      // Check if response has the expected data
-      if (!response.data || !response.data.access_token) {
-        throw new Error('Invalid login response from server');
-      }
-      
-      const { access_token, refresh_token } = response.data;
-      
-      await tokenStorage.saveTokens(access_token, refresh_token);
-      
-      // Set the token in axios headers for subsequent requests
-      api.defaults.headers.Authorization = `Bearer ${access_token}`;
-      
-      const meResponse = await api.get('/auth/me');
-      setUser(meResponse.data);
-      
-      return { success: true };
-    } catch (err) {
-      const message =
-        err.response?.data?.detail || err.message || 'Login failed. Please try again.';
-      setError(message);
-      console.error('Login error:', err);
-      return { success: false, error: message };
-    }
+    setAuthError(null);
+    const tokens = await authService.login(email, password);
+    await tokenStorage.saveTokens(tokens.access_token, tokens.refresh_token);
+    const me = await authService.fetchMe();
+    setUser(me);
+    return me;
   }, []);
 
   const register = useCallback(async (email, password) => {
-    setError(null);
-    try {
-      const response = await api.post('/auth/register', { email, password });
-      console.log('Registration successful:', response.data);
-      
-      // Auto-login right after a successful registration.
-      return login(email, password);
-    } catch (err) {
-      const message =
-        err.response?.data?.detail || 'Registration failed. Please try again.';
-      setError(message);
-      console.error('Registration error:', err);
-      return { success: false, error: message };
-    }
+    setAuthError(null);
+    await authService.register(email, password);
+    // Auto-login right after registering for a smoother first-run experience.
+    return login(email, password);
   }, [login]);
 
   const logout = useCallback(async () => {
     try {
       const refreshToken = await tokenStorage.getRefreshToken();
-      if (refreshToken) {
-        await api.post('/auth/logout', { refresh_token: refreshToken });
-      }
-    } catch (err) {
-      // Even if the server call fails, still clear the local session.
-      console.warn('Logout request failed, clearing session locally', err);
+      if (refreshToken) await authService.logout(refreshToken);
+    } catch (error) {
+      console.log('[auth] logout request failed (clearing local session anyway):', error?.message);
     } finally {
-      await clearSession();
-      delete api.defaults.headers.Authorization;
+      await tokenStorage.clearTokens();
+      setUser(null);
     }
-  }, [clearSession]);
+  }, []);
 
   const value = {
     user,
     isAuthenticated: !!user,
     isLoading,
-    error,
+    authError,
     login,
     register,
     logout,
+    setAuthError,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
-export function useAuth() {
+export function useAuthContext() {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error('useAuth must be used within an AuthProvider');
+  if (!ctx) throw new Error('useAuthContext must be used within an AuthProvider');
   return ctx;
 }
 

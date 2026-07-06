@@ -1,20 +1,19 @@
 import React from 'react';
+import { Text } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import Icon from '@react-native-vector-icons/ionicons';
-
 import ChatScreen from '../screens/main/ChatScreen';
 import DashboardScreen from '../screens/main/DashboardScreen';
 import HistoryScreen from '../screens/main/HistoryScreen';
 import ProfileScreen from '../screens/main/ProfileScreen';
-
+import { COLORS } from '../constants/colors';
 
 const Tab = createBottomTabNavigator();
 
 const ICONS = {
-  Chat: 'chatbubble-ellipses',
-  Dashboard: 'stats-chart',
-  History: 'time',
-  Profile: 'person-circle',
+  Chat: '💬',
+  Dashboard: '📊',
+  History: '🕘',
+  Profile: '👤',
 };
 
 export default function UserTabs() {
@@ -22,11 +21,9 @@ export default function UserTabs() {
     <Tab.Navigator
       screenOptions={({ route }) => ({
         headerShown: false,
-        tabBarActiveTintColor: "#667eea",
-        tabBarInactiveTintColor: "#6b7280",
-        tabBarIcon: ({ color, size }) => (
-          <Icon name={ICONS[route.name]} color={color} size={size} />
-        ),
+        tabBarActiveTintColor: COLORS.primary,
+        tabBarInactiveTintColor: COLORS.textMuted,
+        tabBarIcon: () => <Text style={{ fontSize: 18 }}>{ICONS[route.name]}</Text>,
       })}
     >
       <Tab.Screen name="Chat" component={ChatScreen} />

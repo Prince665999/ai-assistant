@@ -1,37 +1,41 @@
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 
-// The backend's /chat/ endpoint returns the full response in one shot (no
-// token-by-token SSE yet), so true streaming isn't available. To still
-// practice the streaming UI pattern, this hook reveals the finished text
-// progressively on the client, word by word, so it *looks* like it's typing.
-export default function useStreaming(fullText, { speedMs = 30, enabled = true } = {}) {
-  const [displayedText, setDisplayedText] = useState(enabled ? '' : fullText || '');
-  const [isStreaming, setIsStreaming] = useState(!!enabled && !!fullText);
-  const indexRef = useRef(0);
+// The backend returns the full chat response in one go (no token-by-token
+// SSE endpoint), so "streaming" here is a lightweight typewriter effect
+// purely for a nicer reading experience - not a real network stream.
+// Call `start(fullText)` once the full response has arrived.
+export function useStreaming(charsPerTick = 3, tickMs = 16) {
+  const [displayedText, setDisplayedText] = useState('');
+  const [isStreaming, setIsStreaming] = useState(false);
+  const intervalRef = useRef(null);
 
-  useEffect(() => {
-    if (!enabled || !fullText) {
-      setDisplayedText(fullText || '');
-      setIsStreaming(false);
-      return undefined;
+  const stop = useCallback(() => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
     }
+    setIsStreaming(false);
+  }, []);
 
+  const start = useCallback((fullText) => {
+    stop();
     setDisplayedText('');
+    if (!fullText) return;
+
     setIsStreaming(true);
-    indexRef.current = 0;
-    const words = fullText.split(' ');
-
-    const interval = setInterval(() => {
-      indexRef.current += 1;
-      setDisplayedText(words.slice(0, indexRef.current).join(' '));
-      if (indexRef.current >= words.length) {
-        clearInterval(interval);
-        setIsStreaming(false);
+    let index = 0;
+    intervalRef.current = setInterval(() => {
+      index += charsPerTick;
+      setDisplayedText(fullText.slice(0, index));
+      if (index >= fullText.length) {
+        stop();
       }
-    }, speedMs);
+    }, tickMs);
+  }, [charsPerTick, tickMs, stop]);
 
-    return () => clearInterval(interval);
-  }, [fullText, enabled, speedMs]);
+  useEffect(() => () => stop(), [stop]);
 
-  return { displayedText, isStreaming };
+  return { displayedText, isStreaming, start, stop };
 }
+
+export default useStreaming;

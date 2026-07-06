@@ -1,5 +1,4 @@
-import api from './api'; // assumes services/api.js exports a configured axios instance
-                          // with baseURL + auth header injection (Step 14)
+import api from './api';
 
 export async function sendMessage(message) {
   const { data } = await api.post('/chat/', { message });
@@ -8,7 +7,12 @@ export async function sendMessage(message) {
 
 export async function getHistory(limit = 50) {
   const { data } = await api.get('/chat/history', { params: { limit } });
-  return data; // [{ id, role, content, tool_used, created_at }]
+  return data;
+}
+
+export async function getMemory() {
+  const { data } = await api.get('/chat/memory');
+  return data;
 }
 
 export async function clearHistory() {
@@ -20,3 +24,5 @@ export async function exportHistory() {
   const { data } = await api.get('/chat/history/export');
   return data;
 }
+
+export default { sendMessage, getHistory, getMemory, clearHistory, exportHistory };

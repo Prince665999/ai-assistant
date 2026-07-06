@@ -1,53 +1,41 @@
 import React from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, FlatList, StyleSheet } from 'react-native';
 import StatusBadge from './StatusBadge';
+import { COLORS } from '../../constants/colors';
+import { SPACING, RADIUS, FONT_SIZE, SHADOW } from '../../constants/theme';
+import { formatDate } from '../../utils/formatters';
 
-
-// documents: [{ id, filename, status, chunk_count, error_message, created_at }]
-// onDelete: optional (documentId) => void  -- if provided, shows a delete button per row
-export default function DocumentList({ documents, onDelete, emptyText = 'No documents yet.' }) {
-  if (!documents || documents.length === 0) {
+export default function DocumentList({ documents, onDelete, canDelete = false }) {
+  if (!documents?.length) {
     return (
-      <View style={styles.emptyContainer}>
-        <Text style={styles.emptyText}>{emptyText}</Text>
+      <View style={styles.emptyWrap}>
+        <Text style={styles.emptyText}>No documents uploaded yet.</Text>
       </View>
     );
   }
-
-  const renderItem = ({ item }) => (
-    <View style={styles.row}>
-      <View style={styles.info}>
-        <Text style={styles.filename} numberOfLines={1}>{item.filename}</Text>
-        <Text style={styles.meta}>
-          {item.chunk_count ?? 0} chunks · {new Date(item.created_at).toLocaleDateString()}
-        </Text>
-        {item.status === 'failed' && item.error_message ? (
-          <Text style={styles.error} numberOfLines={2}>{item.error_message}</Text>
-        ) : null}
-      </View>
-
-      <View style={styles.right}>
-        <StatusBadge status={item.status} />
-        {onDelete ? (
-          <TouchableOpacity
-            style={styles.deleteBtn}
-            onPress={() => onDelete(item.id)}
-            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-          >
-            <Text style={styles.deleteText}>Delete</Text>
-          </TouchableOpacity>
-        ) : null}
-      </View>
-    </View>
-  );
 
   return (
     <FlatList
       data={documents}
       keyExtractor={(item) => String(item.id)}
-      renderItem={renderItem}
-      ItemSeparatorComponent={() => <View style={styles.separator} />}
       scrollEnabled={false}
+      renderItem={({ item }) => (
+        <View style={styles.row}>
+          <View style={styles.info}>
+            <Text style={styles.name} numberOfLines={1}>{item.filename}</Text>
+            <Text style={styles.meta}>
+              {item.chunk_count ?? 0} chunks · {formatDate(item.created_at)}
+            </Text>
+            {!!item.error_message && <Text style={styles.errorText}>{item.error_message}</Text>}
+          </View>
+          <StatusBadge status={item.status} />
+          {canDelete && (
+            <TouchableOpacity onPress={() => onDelete?.(item.id)} style={styles.deleteButton}>
+              <Text style={styles.deleteText}>Delete</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
     />
   );
 }
@@ -55,50 +43,20 @@ export default function DocumentList({ documents, onDelete, emptyText = 'No docu
 const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 12,
+    backgroundColor: COLORS.surface,
+    borderRadius: RADIUS.md,
+    padding: SPACING.md,
+    marginBottom: SPACING.sm,
+    ...SHADOW,
+    gap: SPACING.sm,
   },
-  info: {
-    flex: 1,
-    marginRight: 12,
-  },
-  filename: {
-    fontSize: 14,
-    fontWeight: '600',
-    color:'#222',
-  },
-  meta: {
-    fontSize: 12,
-    color:'#888',
-    marginTop: 2,
-  },
-  error: {
-    fontSize: 11,
-    color: '#D93025',
-    marginTop: 2,
-  },
-  right: {
-    alignItems: 'flex-end',
-  },
-  deleteBtn: {
-    marginTop: 6,
-  },
-  deleteText: {
-    fontSize: 12,
-    color: '#D93025',
-    fontWeight: '600',
-  },
-  separator: {
-    height: 1,
-    backgroundColor: '#EEE',
-  },
-  emptyContainer: {
-    paddingVertical: 24,
-    alignItems: 'center',
-  },
-  emptyText: {
-    color: '#888',
-    fontSize: 13,
-  },
+  info: { flex: 1 },
+  name: { fontSize: FONT_SIZE.md, fontWeight: '600', color: COLORS.text },
+  meta: { fontSize: FONT_SIZE.xs, color: COLORS.textSecondary, marginTop: 2 },
+  errorText: { fontSize: FONT_SIZE.xs, color: COLORS.danger, marginTop: 2 },
+  deleteButton: { paddingHorizontal: SPACING.sm, paddingVertical: SPACING.xs },
+  deleteText: { color: COLORS.danger, fontWeight: '600', fontSize: FONT_SIZE.sm },
+  emptyWrap: { padding: SPACING.lg, alignItems: 'center' },
+  emptyText: { color: COLORS.textMuted, fontSize: FONT_SIZE.sm },
 });

@@ -1,11 +1,10 @@
-// Central place for "magic strings" used across the app.
+// Expo automatically inlines any env var prefixed with EXPO_PUBLIC_ at
+// build time, for both native and web - no extra babel plugin needed.
+export const API_URL = "https://ai-assistant-d2mk.onrender.com";
 
-// Falls back to localhost if no .env value is picked up by react-native-dotenv.
-export const API_URL = 'http://192.168.100.149:8000';
-
-export const STORAGE_KEYS = {
-  ACCESS_TOKEN: 'access_token',
-  REFRESH_TOKEN: 'refresh_token',
+export const TOKEN_KEYS = {
+  ACCESS: 'access_token',
+  REFRESH: 'refresh_token',
 };
 
 export const ROLES = {
@@ -13,10 +12,20 @@ export const ROLES = {
   USER: 'user',
 };
 
-export const TOOL_NAMES = {
-  CALCULATOR: 'calculator',
-  WEATHER: 'weather',
-  NEWS: 'news',
-  SEARCH_DOCUMENTS: 'search_documents',
-  NONE: 'no_tool',
+export const CHAT_HISTORY_PAGE_SIZE = 20;
+
+export const DATE_RANGES = [
+  { label: '7D', days: 7 },
+  { label: '30D', days: 30 },
+  { label: '90D', days: 90 },
+];
+
+export const TOOL_LABELS = {
+  calculator: 'Calculator',
+  weather: 'Weather',
+  news: 'News',
+  search_documents: 'Documents',
+  no_tool: 'Direct Answer',
 };
+
+export default { API_URL, TOKEN_KEYS, ROLES, CHAT_HISTORY_PAGE_SIZE, DATE_RANGES, TOOL_LABELS };

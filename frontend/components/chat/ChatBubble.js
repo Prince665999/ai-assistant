@@ -1,35 +1,33 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import * as Speech from 'expo-speech';
-import ToolBadge from './ToolBadge';
+import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import StreamingText from './StreamingText';
+import ToolBadge from './ToolBadge';
+import { COLORS } from '../../constants/colors';
+import { SPACING, RADIUS, FONT_SIZE, SHADOW } from '../../constants/theme';
 
-export default function ChatBubble({ message, isStreaming, onStreamDone }) {
+export default function ChatBubble({ message, animate = false, onSpeak }) {
   const isUser = message.role === 'user';
-
-  const speak = () => {
-    Speech.stop();
-    Speech.speak(message.content, { rate: 1.0 });
-  };
 
   return (
     <View style={[styles.row, isUser ? styles.rowUser : styles.rowAssistant]}>
-      <View style={[styles.bubble, isUser ? styles.bubbleUser : styles.bubbleAssistant]}>
-        {isStreaming ? (
-          <StreamingText
-            text={message.content}
-            onDone={onStreamDone}
-            style={[styles.text, isUser && styles.textUser]}
-          />
-        ) : (
+      <View
+        style={[
+          styles.bubble,
+          isUser ? styles.bubbleUser : styles.bubbleAssistant,
+          message.isError && styles.bubbleError,
+        ]}
+      >
+        {isUser || !animate ? (
           <Text style={[styles.text, isUser && styles.textUser]}>{message.content}</Text>
+        ) : (
+          <StreamingText text={message.content} />
         )}
 
-        {!isUser && <ToolBadge tool={message.tool_used} />}
+        {!isUser && !!message.toolUsed && <ToolBadge tool={message.toolUsed} />}
 
-        {!isUser && !isStreaming && (
-          <TouchableOpacity onPress={speak} style={styles.ttsButton} hitSlop={8}>
-            <Text style={styles.ttsIcon}>🔊</Text>
+        {!isUser && !message.isError && !!onSpeak && (
+          <TouchableOpacity onPress={() => onSpeak(message.content)} style={styles.speakButton}>
+            <Text style={styles.speakText}>🔊 Play</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -38,27 +36,21 @@ export default function ChatBubble({ message, isStreaming, onStreamDone }) {
 }
 
 const styles = StyleSheet.create({
-  row: { width: '100%', marginBottom: 8, flexDirection: 'row' },
-  rowUser: { justifyContent: 'flex-end' },
-  rowAssistant: { justifyContent: 'flex-start' },
+  row: { width: '100%', paddingHorizontal: SPACING.md, marginBottom: SPACING.sm },
+  rowUser: { alignItems: 'flex-end' },
+  rowAssistant: { alignItems: 'flex-start' },
   bubble: {
-    maxWidth: '80%',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 16,
+    maxWidth: '82%',
+    borderRadius: RADIUS.lg,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: SPACING.sm,
+    ...SHADOW,
   },
-  bubbleUser: {
-    backgroundColor: '#667eea',
-    borderBottomRightRadius: 4,
-  },
-  bubbleAssistant: {
-    backgroundColor: '#ffffff',
-    borderBottomLeftRadius: 4,
-    borderWidth: 1,
-    borderColor: '#e2e4ec',
-  },
-  text: { fontSize: 16, color: '#1f2333' },
-  textUser: { color: '#ffffff' },
-  ttsButton: { marginTop: 4, alignSelf: 'flex-start' },
-  ttsIcon: { fontSize: 16 },
+  bubbleUser: { backgroundColor: COLORS.chatBubbleUser, borderBottomRightRadius: 4 },
+  bubbleAssistant: { backgroundColor: COLORS.chatBubbleAssistant, borderBottomLeftRadius: 4 },
+  bubbleError: { backgroundColor: '#fef2f2', borderWidth: 1, borderColor: COLORS.danger },
+  text: { fontSize: FONT_SIZE.md, color: COLORS.text, lineHeight: 22 },
+  textUser: { color: COLORS.onPrimary },
+  speakButton: { marginTop: SPACING.xs, alignSelf: 'flex-start' },
+  speakText: { fontSize: FONT_SIZE.xs, color: COLORS.primary, fontWeight: '600' },
 });

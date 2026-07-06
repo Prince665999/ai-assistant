@@ -1,141 +1,68 @@
-import React, { useState, useCallback } from 'react';
-import { View, Text, ScrollView, RefreshControl, StyleSheet, Alert } from 'react-native';
-import { useFocusEffect } from '@react-navigation/native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { View, StyleSheet } from 'react-native';
+import Header from '../../components/common/Header';
 import DocumentList from '../../components/admin/DocumentList';
 import LoadingSpinner from '../../components/common/LoadingSpinner';
 import ErrorMessage from '../../components/common/ErrorMessage';
-import { getAllDocuments, deleteDocument } from '../../services/document';
-
+import * as documentService from '../../services/document';
+import { COLORS } from '../../constants/colors';
 
 export default function DocumentManagementScreen() {
   const [documents, setDocuments] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState(null);
+  const [status, setStatus] = useState('loading');
 
-  const loadDocuments = useCallback(async () => {
+  const load = useCallback(async () => {
+    setStatus('loading');
     try {
-      setError(null);
-      const data = await getAllDocuments();
-      setDocuments(data);
-    } catch (err) {
-      setError('Could not load documents. Pull down to retry.');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
+      const data = await documentService.listAllDocuments();
+      setDocuments(data || []);
+      setStatus('ready');
+    } catch (error) {
+      console.log('[DocumentManagementScreen] load failed:', error?.message);
+      setStatus('error');
     }
   }, []);
 
-  useFocusEffect(
-    useCallback(() => {
-      loadDocuments();
-    }, [loadDocuments])
-  );
+  useEffect(() => { load(); }, [load]);
 
-  const handleRefresh = () => {
-    setRefreshing(true);
-    loadDocuments();
+  const handleDelete = async (id) => {
+    try {
+      await documentService.deleteDocument(id);
+      setDocuments((prev) => prev.filter((doc) => doc.id !== id));
+    } catch (error) {
+      console.log('[DocumentManagementScreen] delete failed:', error?.message);
+    }
   };
 
-  const handleDelete = (documentId) => {
-    const doc = documents.find((d) => d.id === documentId);
-    Alert.alert(
-      'Delete document',
-      `Delete "${doc?.filename || 'this document'}"? This cannot be undone.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await deleteDocument(documentId);
-              setDocuments((prev) => prev.filter((d) => d.id !== documentId));
-            } catch (err) {
-              Alert.alert('Delete failed', 'Please try again.');
-            }
-          },
-        },
-      ]
+  if (status === 'loading') {
+    return (
+      <View style={styles.flex}>
+        <Header title="Manage Documents" subtitle="View and delete uploaded files" />
+        <LoadingSpinner label="Loading documents…" />
+      </View>
     );
-  };
-
-  if (loading) {
-    return <LoadingSpinner />;
   }
 
-  const doneCount = documents.filter((d) => d.status === 'done').length;
-  const processingCount = documents.filter((d) => d.status === 'processing').length;
-  const failedCount = documents.filter((d) => d.status === 'failed').length;
-
-  return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />}
-    >
-      <Text style={styles.title}>Document Management</Text>
-
-      <View style={styles.summaryRow}>
-        <SummaryPill label="Done" value={doneCount} color="#1E8E3E" />
-        <SummaryPill label="Processing" value={processingCount} color="#C77700" />
-        <SummaryPill label="Failed" value={failedCount} color="#D93025" />
+  if (status === 'error') {
+    return (
+      <View style={styles.flex}>
+        <Header title="Manage Documents" subtitle="View and delete uploaded files" />
+        <ErrorMessage message="Couldn't load documents." onRetry={load} />
       </View>
+    );
+  }
 
-      {error ? <ErrorMessage message={error} onRetry={loadDocuments} /> : null}
-
-      <DocumentList
-        documents={documents}
-        onDelete={handleDelete}
-        emptyText="No documents have been uploaded yet."
-      />
-    </ScrollView>
-  );
-}
-
-function SummaryPill({ label, value, color }) {
   return (
-    <View style={[styles.pill, { borderColor: color }]}>
-      <Text style={[styles.pillValue, { color }]}>{value}</Text>
-      <Text style={styles.pillLabel}>{label}</Text>
+    <View style={styles.flex}>
+      <Header title="Manage Documents" subtitle="View and delete uploaded files" />
+      <View style={styles.content}>
+        <DocumentList documents={documents} onDelete={handleDelete} canDelete />
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#FAFAFA',
-  },
-  content: {
-    padding: 20,
-  },
-  title: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#222',
-    marginBottom: 16,
-  },
-  summaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 20,
-  },
-  pill: {
-    flex: 1,
-    marginHorizontal: 4,
-    borderWidth: 1.5,
-    borderRadius: 12,
-    paddingVertical: 10,
-    alignItems: 'center',
-  },
-  pillValue: {
-    fontSize: 20,
-    fontWeight: '700',
-  },
-  pillLabel: {
-    fontSize: 12,
-    color:'#888',
-    marginTop: 2,
-  },
+  flex: { flex: 1, backgroundColor: COLORS.background },
+  content: { padding: 16, paddingTop: 0, flex: 1 },
 });

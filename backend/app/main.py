@@ -42,7 +42,14 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 # --- CORS ---
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.CORS_ORIGINS,
+    allow_origins=[
+        "https://ai-assistant-lyart.vercel.app",
+        "https://ai-assistant-frontend.vercel.app",
+        "https://ai-assistant-67o6w4df6-princekaiza.vercel.app",
+        "http://localhost:3000",
+        "http://localhost:8081",
+        "http://192.168.100.149:3000"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

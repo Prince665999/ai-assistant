@@ -1,46 +1,30 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { COLORS } from '../../constants/colors';
+import { SPACING, RADIUS, FONT_SIZE } from '../../constants/theme';
 
-
-// status: 'processing' | 'done' | 'failed'
-const STATUS_MAP = {
-  processing: { label: 'Processing', bg: '#FFF4E0', text: '#C77700' },
-  done: { label: 'Done', bg: '#E1F7E8', text: '#1E8E3E' },
-  failed: { label: 'Failed', bg: '#FDE8E8', text: '#D93025' },
+const STATUS_STYLES = {
+  done: { bg: '#dcfce7', fg: COLORS.success, label: 'Done' },
+  processing: { bg: '#fef3c7', fg: COLORS.warning, label: 'Processing' },
+  failed: { bg: '#fee2e2', fg: COLORS.danger, label: 'Failed' },
 };
 
 export default function StatusBadge({ status }) {
-  const config = STATUS_MAP[status] || {
-    label: status || 'Unknown',
-    bg: '#EEE',
-    text: '#666',
-  };
+  const config = STATUS_STYLES[status] || { bg: COLORS.background, fg: COLORS.textSecondary, label: status };
 
   return (
     <View style={[styles.badge, { backgroundColor: config.bg }]}>
-      {status === 'processing' && <View style={[styles.dot, { backgroundColor: config.text }]} />}
-      <Text style={[styles.text, { color: config.text }]}>{config.label}</Text>
+      <Text style={[styles.text, { color: config.fg }]}>{config.label}</Text>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   badge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 12,
     alignSelf: 'flex-start',
+    borderRadius: RADIUS.pill,
+    paddingHorizontal: SPACING.sm,
+    paddingVertical: 2,
   },
-  dot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    marginRight: 6,
-  },
-  text: {
-    fontSize: 12,
-    fontWeight: '600',
-  },
+  text: { fontSize: FONT_SIZE.xs, fontWeight: '700' },
 });
